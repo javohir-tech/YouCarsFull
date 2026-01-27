@@ -1,11 +1,13 @@
 <template>
-    <form @submit.prevent="handleSingUp" class="form">
-        <input type="text" v-model="username">
-        <input type="email" v-model="email">
-        <input type="password" v-model="password">
-        <input type="password" v-model="confirm_password">
-        <button type="submit">Sing Up</button>
-    </form>
+    <div class="container">
+        <form @submit.prevent="handleSingUp" class="form">
+            <input type="text" v-model="username">
+            <input type="email" v-model="email">
+            <input type="password" v-model="password">
+            <input type="password" v-model="confirm_password">
+            <button type="submit">Sing Up</button>
+        </form>
+    </div>
 </template>
 
 <script setup>
