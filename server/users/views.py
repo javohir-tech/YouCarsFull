@@ -138,6 +138,8 @@ class ForgetPasswordView(APIView):
                     "success": True,
                     "message": "We’ve sent a message to your email. Please check your inbox.",
                     "data": {
+                        "email" : user.email,
+                        "username" : user.username,
                         "tokens": {
                             "verify_token": str(token),
                         }
@@ -173,11 +175,8 @@ class CodeVerifyView(APIView):
                 return Response(
                     {
                         "success": True,
-                        "message": "verifikatsiyadan muvaffaqiyatli o'tingiz",
-                        "data" : {
-                            "tokens" : {
-                                "code_edit_token" : str(token)
-                            }
-                        }
+                        "message": "Code has been verified successfully.",
+                        "data": {"tokens": {"code_edit_token": str(token)}},
                     }
                 )
+            raise ValidationError({"code" : "Invalid verification code."})

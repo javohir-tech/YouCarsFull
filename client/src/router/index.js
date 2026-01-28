@@ -3,7 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import mainLayout from '@/layout/mainLayout.vue'
 ///////////////// VIEWS ////////////////
 import { Home } from '@/views'
-import { forgetPassword, login, singup, verifyCode } from '@/auth'
+import { forgetPassword, login, newPassword, singup, verifyCode } from '@/auth'
 import Profile from '@/profile/profile.vue'
 
 const router = createRouter({
@@ -27,8 +27,12 @@ const router = createRouter({
           component: forgetPassword
         },
         {
-          path: "verify", 
-          component : verifyCode
+          path: "verify",
+          component: verifyCode
+        },
+        {
+          path: "newpass",
+          component: newPassword
         },
         {
           path: "",

@@ -11,7 +11,7 @@ class VerifyTokenAuthentication(JWTAuthentication):
         try:
             return VerifyToken(raw_token)
         except Exception as e:
-            raise AuthenticationFailed(f"token yaroqsiz {e}")
+            raise AuthenticationFailed(f"Token is invalid {e}")
 
     def get_user(self, validated_token):
 
@@ -21,12 +21,14 @@ class VerifyTokenAuthentication(JWTAuthentication):
                 raise AuthenticationFailed(f"token ichida {user_id} yo'q")
 
             user = User.objects.get(id=user_id)
-            
+
             if user.auth_status != validated_token.get("current_step"):
-                raise AuthenticationFailed("token yaroqsiz yoki eskirgan")
+                raise AuthenticationFailed("Token is invalid or has expired.")
 
             return user
         except ObjectDoesNotExist:
             raise AuthenticationFailed("user topimadi")
         except Exception as e:
-            raise AuthenticationFailed(f"authenticated hatosi {e}")
+            raise AuthenticationFailed(
+                f"Authentication credentials were not provided or are invalid."
+            )

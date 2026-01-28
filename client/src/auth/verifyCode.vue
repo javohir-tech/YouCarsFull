@@ -3,23 +3,16 @@
         <div class="registration-container">
             <div class="registration-card">
                 <h1 class="title">Подтверждение</h1>
-                <p class="subtitle">Введите код из письма отправленного на <strong>{{ email }}</strong></p>
+                <p class="subtitle">Введите код из письма отправленного на <strong>{{ userStore.email }}</strong>
+                </p>
 
                 <a-form :model="formState" @finish="onFinish" layout="vertical" class="registration-form">
                     <!-- Verification Code Inputs -->
                     <div class="code-inputs-wrapper">
-                        <input
-                            v-for="(digit, index) in code"
-                            :key="index"
-                            :ref="el => inputRefs[index] = el"
-                            v-model="code[index]"
-                            type="text"
-                            maxlength="1"
-                            class="code-input"
-                            @input="handleInput(index, $event)"
-                            @keydown="handleKeyDown(index, $event)"
-                            @paste="handlePaste"
-                        />
+                        <input v-for="(digit, index) in code" :key="index" :ref="el => inputRefs[index] = el"
+                            v-model="code[index]" type="text" maxlength="1" class="code-input"
+                            @input="handleInput(index, $event)" @keydown="handleKeyDown(index, $event)"
+                            @paste="handlePaste" />
                     </div>
 
                     <!-- Timer or Resend Button -->
@@ -36,15 +29,8 @@
 
                     <!-- Submit Button -->
                     <a-form-item class="form-item">
-                        <a-button 
-                            :loading="loading" 
-                            :disabled="!isCodeComplete"
-                            type="primary" 
-                            html-type="submit" 
-                            size="large"
-                            block 
-                            class="submit-button"
-                        >
+                        <a-button :loading="loading" :disabled="!isCodeComplete" type="primary" html-type="submit"
+                            size="large" block class="submit-button">
                             {{ loading ? "Loading..." : "Подтвердить" }}
                         </a-button>
                     </a-form-item>
@@ -63,17 +49,20 @@
 import { message } from 'ant-design-vue';
 import { reactive, ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
+import { useUserStore } from '@/store/useUserStore';
+import api from '@/utils/axios';
+import { notification } from 'ant-design-vue';
 
+const userStore = useUserStore()
 const router = useRouter()
 
-// Email prop yoki route params dan olish mumkin
-const email = ref('example@mail.com') // Bu yerga haqiqiy emailni qo'yasiz
-
+const formState = reactive({})
 const code = reactive(['', '', '', ''])
 const inputRefs = ref([])
 const loading = ref(false)
 const resending = ref(false)
-const timeLeft = ref(120) // 2 minut = 120 sekund
+const timeLeft = ref(120)
 let timerInterval = null
 
 // Code to'liq kiritilganligini tekshirish
@@ -81,19 +70,18 @@ const isCodeComplete = computed(() => {
     return code.every(digit => digit !== '')
 })
 
-// Timer formatlash (mm:ss)
+
 const formattedTime = computed(() => {
     const minutes = Math.floor(timeLeft.value / 60)
     const seconds = timeLeft.value % 60
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
 })
 
-// Timer boshlash
 const startTimer = () => {
     if (timerInterval) {
         clearInterval(timerInterval)
     }
-    
+
     timeLeft.value = 120
     timerInterval = setInterval(() => {
         if (timeLeft.value > 0) {
@@ -104,36 +92,33 @@ const startTimer = () => {
     }, 1000)
 }
 
-// Input handling
 const handleInput = (index, event) => {
     const value = event.target.value
-    
-    // Faqat raqam kiritishga ruxsat
+
     if (!/^\d*$/.test(value)) {
         code[index] = ''
         return
     }
-    
+
     code[index] = value
-    
-    // Keyingi inputga o'tish
+
     if (value && index < 3) {
         inputRefs.value[index + 1]?.focus()
     }
 }
 
-// Backspace handling
+
 const handleKeyDown = (index, event) => {
     if (event.key === 'Backspace' && !code[index] && index > 0) {
         inputRefs.value[index - 1]?.focus()
     }
 }
 
-// Paste handling
+
 const handlePaste = (event) => {
     event.preventDefault()
     const pasteData = event.clipboardData.getData('text').slice(0, 4)
-    
+
     if (/^\d{4}$/.test(pasteData)) {
         pasteData.split('').forEach((digit, index) => {
             code[index] = digit
@@ -144,66 +129,95 @@ const handlePaste = (event) => {
 
 // Form submit
 const onFinish = async () => {
+    const verificationCode = code.join('')
     loading.value = true
     try {
-        const verificationCode = code.join('')
-        
-        // Bu yerga o'zingizning API logikangizni yozing
-        // const { data } = await api.post("auth/verify-code/", {
-        //     email: email.value,
-        //     code: verificationCode
-        // })
-        
-        console.log('Verification code:', verificationCode)
-        message.success('Код подтвержден!')
-        
-        // Keyingi sahifaga o'tish (masalan, parol o'zgartirish)
-        // router.push('/reset-password')
-    } catch (error) {
-        message.error('Неверный код')
-        // Kodni tozalash
+        const verify_token = localStorage.getItem("verify_token")
+        const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/auth/verify/`,
+            {
+                code: verificationCode
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${verify_token}`
+                }
+            }
+        )
+        message.success(data.message)
+        localStorage.setItem("edit_password_token", data.data.tokens.code_edit_token)
         code.forEach((_, index) => {
             code[index] = ''
         })
         inputRefs.value[0]?.focus()
+        router.push("newpass")
+    } catch (error) {
+        if (error.response) {
+            const errors = error.response
+            if (errors.data.code) {
+                message.error(errors.data.code)
+            } else if (errors.data.detail) {
+                message.error(errors.data.detail)
+            } else {
+                message.error("An error occurred.")
+            }
+
+            console.log(errors)
+        } else {
+            message.error("No connection to the server")
+            console.log(error)
+        }
     } finally {
         loading.value = false
     }
+
+
 }
 
 // Kodni qayta yuborish
 const resendCode = async () => {
     resending.value = true
     try {
-        // Bu yerga o'zingizning API logikangizni yozing
-        // const { data } = await api.post("auth/resend-code/", {
-        //     email: email.value
-        // })
-        
-        message.success('Код отправлен повторно!')
-        
-        // Kodni tozalash
+        const email = userStore.email
+        const { data } = await api.post('auth/forget/', {
+            user_input: email
+        })
+
+        notification.success({ message: "Successfully", description: data.message })
+        localStorage.setItem("verify_token", data.data.tokens.verify_token)
+        console.log(data)
         code.forEach((_, index) => {
             code[index] = ''
         })
         inputRefs.value[0]?.focus()
-        
-        // Timer qayta boshlash
+
+
         startTimer()
     } catch (error) {
-        message.error('Ошибка при отправке кода')
+        if (error.response) {
+            const errors = error.response
+            console.log(errors)
+            if (errors.data.code) {
+                message.warning(errors.data.code[0])
+            } else if (errors.data.user) {
+                message.error(errors.data.user[0])
+            } else if (errors.data.input) {
+                message.error(errors.data.input[0])
+            } else {
+                message.error("An error occurred.")
+            }
+        } else {
+            message.error("No connection to the server.")
+        }
     } finally {
         resending.value = false
     }
 }
 
-// Component mount bo'lganda timer boshlash
 onMounted(() => {
     startTimer()
     inputRefs.value[0]?.focus()
 })
 
-// Component unmount bo'lganda timerni to'xtatish
 onUnmounted(() => {
     if (timerInterval) {
         clearInterval(timerInterval)
@@ -367,6 +381,4 @@ onUnmounted(() => {
     -webkit-appearance: none;
     margin: 0;
 }
-
-
 </style>

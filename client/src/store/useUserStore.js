@@ -10,7 +10,7 @@ export const useUserStore = defineStore('user', {
     ),
     getters: {
         get_user: (state) => state.username,
-        avatarUrl : (state) => `https://api.dicebear.com/9.x/initials/svg?seed=${state.username}`
+        avatarUrl: (state) => `https://api.dicebear.com/9.x/initials/svg?seed=${state.username}`
     },
     actions: {
         add_user(username, email, access_token) {
@@ -21,7 +21,13 @@ export const useUserStore = defineStore('user', {
             localStorage.setItem("email", email)
         },
 
-        clear(){
+        add_email(email) {
+            this.email = email
+            localStorage.setItem("email" , email)
+        },
+
+
+        clear() {
             this.username = ""
             this.email = ""
             this.access_token = ""

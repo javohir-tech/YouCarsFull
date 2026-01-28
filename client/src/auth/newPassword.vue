@@ -2,22 +2,28 @@
     <div class="registration-page">
         <div class="registration-container">
             <div class="registration-card">
-                <h1 class="title">Забыли пароль?</h1>
-                <p class="subtitle">Введите e-mail or username для восстановления</p>
+                <h1 class="title">Новый пароль</h1>
+                <p class="subtitle">Введите новый пароль для вашего аккаунта</p>
 
                 <a-form :model="formState" :rules="rules" @finish="onFinish" @finishFailed="onFinishFailed"
                     layout="vertical" class="registration-form">
-                    <!-- E-mail or username -->
-                    <a-form-item name="user_input" class="form-item">
-                        <a-input v-model:value="formState.user_input" placeholder="E-mail or Username" size="large"
+                    <!-- Новый пароль -->
+                    <a-form-item name="password" class="form-item">
+                        <a-input-password v-model:value="formState.password" placeholder="Новый пароль" size="large"
                             class="custom-input" />
+                    </a-form-item>
+
+                    <!-- Повторите пароль -->
+                    <a-form-item name="confirmPassword" class="form-item">
+                        <a-input-password v-model:value="formState.confirmPassword" placeholder="Повторите пароль"
+                            size="large" class="custom-input" />
                     </a-form-item>
 
                     <!-- Submit Button -->
                     <a-form-item class="form-item">
                         <a-button :loading="loading" type="primary" html-type="submit" size="large" block
                             class="submit-button">
-                            {{ loading ? "Loading..." : "Восстановить" }}
+                            {{ loading ? "Loading..." : "Сохранить пароль" }}
                         </a-button>
                     </a-form-item>
 
@@ -35,25 +41,42 @@
 import { message } from 'ant-design-vue';
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import api from '@/utils/axios';
-import { notification } from 'ant-design-vue';
-import { useUserStore } from '@/store/useUserStore';
 
-const userStore = useUserStore()
 const router = useRouter()
 
 const formState = reactive({
-    user_input: '',
+    password: '',
+    confirmPassword: '',
 });
 
 const loading = ref(false)
 
-
 const rules = {
-    user_input: [
+    password: [
         {
             required: true,
-            message: 'Пожалуйста, введите email or username',
+            message: 'Пожалуйста, введите пароль',
+            trigger: 'blur',
+        },
+        {
+            min: 6,
+            message: 'Пароль должен содержать минимум 6 символов',
+            trigger: 'blur',
+        },
+    ],
+    confirmPassword: [
+        {
+            required: true,
+            message: 'Пожалуйста, повторите пароль',
+            trigger: 'blur',
+        },
+        {
+            validator: (rule, value) => {
+                if (value !== formState.password) {
+                    return Promise.reject('Пароли не совпадают');
+                }
+                return Promise.resolve();
+            },
             trigger: 'blur',
         },
     ],
@@ -62,30 +85,11 @@ const rules = {
 const onFinish = async (values) => {
     loading.value = true
     try {
-        const { data } = await api.post("auth/forget/", {
-            user_input: values.user_input
-        })
-        notification.success({ message: "Successfully", description: data.message })
-        localStorage.setItem("verify_token", data.data.tokens.verify_token)
-        router.push("verify")
-        userStore.add_email(data.data.email)
-        console.log(data)
+        // Bu yerga o'zingizning API logikangizni yozing
+        console.log('Password values:', values)
+        
     } catch (error) {
-        if (error.response) {
-            const errors = error.response
-            console.log(errors)
-            if (errors.data.code) {
-                message.warning(errors.data.code[0])
-            } else if (errors.data.user) {
-                message.error(errors.data.user[0])
-            }else if(errors.data.input){
-                message.error(errors.data.input[0])
-            } else {
-                message.error("An error occurred.")
-            }
-        } else {
-            message.error("No connection to the server.")
-        }
+        message.error("Произошла ошибка")
     } finally {
         loading.value = false
     }
@@ -132,17 +136,6 @@ const onFinishFailed = (errorInfo) => {
     color: #8C8C8C;
     text-align: center;
     margin-bottom: 32px;
-}
-
-.success-alert {
-    background: #D4EDDA;
-    border: 1px solid #C3E6CB;
-    border-radius: 4px;
-    padding: 12px 16px;
-    margin-bottom: 24px;
-    font-size: 14px;
-    color: #155724;
-    line-height: 1.5;
 }
 
 .registration-form {
