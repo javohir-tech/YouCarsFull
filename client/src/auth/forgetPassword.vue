@@ -60,12 +60,13 @@ const rules = {
 const onFinish = async (values) => {
     loading.value = true
     try {
-        const data = await api.post("auth/forget/", {
+        const { data } = await api.post("auth/forget/", {
             user_input: values.user_input
         })
-        notification.success({ message: "Success", description: data.data.message })
+        notification.success({ message: "Successfully", description: data.message })
+        localStorage.setItem("verify_token", data.data.tokens.verify_token)
         router.push("verify")
-        // console.log(data)
+        console.log(data)
     } catch (error) {
         if (error.response) {
             const errors = error.response

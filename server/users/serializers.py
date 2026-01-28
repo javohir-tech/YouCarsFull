@@ -78,9 +78,6 @@ class LoginSerilazer(serializers.Serializer):
                 {"password": "The password length must be between 8 and 32 characters."}
             )
         login_type = check_login_type(user_input)
-        print("=" * 50)
-        print(login_type)
-        print("=" * 50)
         try:
             if login_type == "username":
                 current_user = User.objects.get(username=user_input)
@@ -125,26 +122,34 @@ class ForgetPasswordSerializer(serializers.Serializer):
                 current_user = User.objects.get(email=user_input)
                 user_email = current_user
         except ObjectDoesNotExist:
-            raise ValidationError({"user": "user topilmadi "})
+            raise ValidationError({"user": "User not found"})
 
         current_user.create_confirmation()
 
         verify_code = current_user.verify.filter(
             expire_time__gte=timezone.now(), is_confirmed=False
-        ).order_by('-created_time')
-        print(verify_code)
+        ).order_by("-created_time")
+        # print(verify_code)
         if verify_code.count() > 1:
             verify_code.first().delete()
             raise ValidationError(
-                {"code": "sizda yaroqli kod bor tugash vaqtini kuting"}
+                {"code": "You already have a valid code. Please wait until it expires."}
             )
 
         if not verify_code.exists():
-            raise ValidationError({"code": "Kod topilmadi"})
+            raise ValidationError({"code": "Code not found"})
 
         send_email(user_email, verify_code.first().code)
+        attrs['user'] = current_user
 
         return attrs
+
+
+# ////////////////////////////////////////////////////////
+# ////////////////    VERIFY CODE   //////////////////////
+# ///////////////////////////////////////////////////////
+class CodeVerifySerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=4, write_only=True, required=True)
 
 
 # class
