@@ -96,7 +96,11 @@
                     </Col>
                     <Col :span="5">
                         <div class="bottom_rigth">
-                            <Button>Войти</Button>
+                            <Button>
+                                <router-link to="login">
+                                    Войти
+                                </router-link>
+                            </Button>
                             <Button type="primary">
                                 <router-link to="singup">
                                     Регистрация

@@ -3,7 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import mainLayout from '@/layout/mainLayout.vue'
 ///////////////// VIEWS ////////////////
 import { Home } from '@/views'
-import { singup } from '@/auth'
+import { login, singup } from '@/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,6 +17,10 @@ const router = createRouter({
         {
           path: "singup",
           component: singup
+        },
+        {
+          path: "login",
+          component: login
         },
         {
           path: "",

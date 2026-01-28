@@ -39,14 +39,15 @@
 
                     <!-- Submit Button -->
                     <a-form-item class="form-item">
-                        <a-button type="primary" html-type="submit" size="large" block class="submit-button">
-                            Зарегистрироваться
+                        <a-button  :loading="loading" type="primary" html-type="submit" size="large"
+                            block class="submit-button">
+                            {{ loading ? "Loading..." : "Зарегистрироваться" }}
                         </a-button>
                     </a-form-item>
 
                     <!-- Login Link -->
                     <div class="login-link">
-                        Уже есть аккаунт? <a href="#">Войти</a>
+                        Уже есть аккаунт? <router-link to="login">Войти</router-link>
                     </div>
                 </a-form>
             </div>
@@ -58,6 +59,9 @@
 import { message } from 'ant-design-vue';
 import axios from 'axios';
 import { reactive, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+
+const router = useRouter()
 
 const formState = reactive({
     name: '',
@@ -102,8 +106,8 @@ const rules = {
             trigger: 'blur',
         },
         {
-            min: 6,
-            message: 'Пароль должен содержать минимум 6 символов',
+            min: 8,
+            message: 'Пароль должен содержать минимум 8 символов',
             trigger: 'blur',
         },
     ],
@@ -147,18 +151,20 @@ const onFinish = async (values) => {
             confirm_password: values.confirmPassword
         })
         console.log(data)
-        const access_token = data.data.access_token
-        const refresh_token = data.data.refresh_token
+        const access_token = data.data.tokens.access_token
+        const refresh_token = data.data.tokens.refresh_token
 
         localStorage.setItem("access_token", access_token)
         localStorage.setItem("refresh_token", refresh_token)
-
+        localStorage.setItem("username", data.data.username)
+        localStorage.setItem("useremail", data.data.email)
         message.success(data.message)
         formState.name = ""
         formState.email = ""
         formState.password = ""
         formState.confirmPassword = ""
         formState.agreement = ""
+        router.push("/")
     } catch (error) {
         if (error.response) {
             const errors = error.response.data
