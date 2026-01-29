@@ -20,22 +20,25 @@ from .serializers import (
     ForgetPasswordSerializer,
     CodeVerifySerializer,
     NewPasswordSerializer,
+    EmailEditSerializer,
+    EmailVerifySerializer,
 )
 
 # SIMPLE JWT
 from rest_framework_simplejwt.tokens import RefreshToken
 
 # VERIFY TOKEN
-from .tokens import VerifyToken
+from .tokens import VerifyToken, EmailEditToken
 
 # Authentications
-from .authentication import VerifyTokenAuthentication
+from .authentication import VerifyTokenAuthentication, EmailEditAuthentication
 
 # permissions
 from .permissions import (
     IsVerifyPermission,
     CodeVerifyPermission,
     EditPasswordPermission,
+    EditEmailPermissions,
 )
 
 
@@ -170,9 +173,11 @@ class CodeVerifyView(APIView):
             )
 
             if current_code.exists():
-                current_code.first().is_confirmed = True
+                verify_obj = current_code.first()
+                verify_obj.is_confirmed = True
+                verify_obj.save()
                 user.auth_status = Auth_STATUS.EDIT_PASSWORD
-                current_code.first().save()
+
                 user.save()
                 token = VerifyToken.for_user(user)
                 return Response(
@@ -199,14 +204,93 @@ class NewPasswordView(APIView):
         )
 
         if serializer.is_valid(raise_exception=True):
-            
+
             serializer.save()
 
             return Response(
                 {
                     "success": True,
-                    "message": "Your password has been changed successfully. Please log in"
+                    "message": "Your password has been changed successfully. Please log in",
                 }
             )
-            
 
+
+# ////////////////////////////////////////////////////////
+# //////////////////   EMIAL EDIT    /////////////////////
+# ////////////////////////////////////////////////////////
+class EditEmailView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = EmailEditSerializer(data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            token = EmailEditToken.for_user(
+                self.request.user,
+                serializer.validated_data["email"],
+                serializer.validated_data["old_email"],
+            )
+            return Response(
+                {
+                    "success": True,
+                    "message": "We’ve sent a message to your email. Please check your inbox",
+                    "data": {"token": {"email_edit_token": str(token)}},
+                }
+            )
+
+
+# ////////////////////////////////////////////////////////
+# //////////////////   EMIAL Verify    ///////////////////
+# ////////////////////////////////////////////////////////
+class EmailVerifyView(APIView):
+    permission_classes = [EditEmailPermissions]
+    authentication_classes = [EmailEditAuthentication]
+
+    def put(self, request):
+
+        serializer = EmailVerifySerializer(
+            instance=self.request.user, data=request.data
+        )
+
+        if serializer.is_valid(raise_exception=True):
+
+            new_email = request.auth.get("new_email")
+            old_email = request.auth.get("old_email")
+            code = serializer.validated_data.get("code")
+
+            user = User.objects.get(email=old_email)
+
+            if user is None:
+                raise ValidationError({"email": "User not found"})
+
+            current_user = User.objects.filter(email=new_email)
+            if current_user.exists():
+                raise ValidationError(
+                    {"email": "This email address is already in use."}
+                )
+
+            verify_code = user.verify.filter(
+                expire_time__gte=timezone.now(), code=code, is_confirmed=False
+            )
+            print("=" * 50)
+            print(verify_code)
+            print("=" * 50)
+
+            if verify_code.exists():
+                verify_obj = verify_code.first()
+                verify_obj.is_confirmed = True
+                verify_obj.save()
+                user.email = new_email
+                user.save()
+            else:
+                raise ValidationError(
+                    {"code": "The verification code is invalid or expired."}
+                )
+
+            return Response(
+                {
+                    "success": True,
+                    "message": "Email address has been successfully updated.",
+                }
+            )

@@ -1,5 +1,5 @@
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from .tokens import VerifyToken
+from .tokens import VerifyToken, EmailEditToken
 from rest_framework.exceptions import AuthenticationFailed
 from users.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -11,7 +11,7 @@ class VerifyTokenAuthentication(JWTAuthentication):
         try:
             return VerifyToken(raw_token)
         except Exception as e:
-            raise AuthenticationFailed(f"Token is invalid {e}")
+            raise AuthenticationFailed(f"Token is invalid")
 
     def get_user(self, validated_token):
 
@@ -31,4 +31,27 @@ class VerifyTokenAuthentication(JWTAuthentication):
         except Exception as e:
             raise AuthenticationFailed(
                 f"Authentication credentials were not provided or are invalid."
+            )
+
+
+class EmailEditAuthentication(JWTAuthentication):
+
+    def get_validated_token(self, raw_token):
+        try:
+            return EmailEditToken(raw_token)
+        except Exception as e:
+            raise AuthenticationFailed("Token is invalid or expired")
+
+    def get_user(self, validated_token):
+        try:
+            user_id = validated_token.get("user_id")
+
+            user = User.objects.get(id=user_id)
+
+            return user
+        except ObjectDoesNotExist:
+            raise AuthenticationFailed("user not found")
+        except Exception as e:
+            raise AuthenticationFailed(
+                "Authentication credentials were not provided or are invalid."
             )

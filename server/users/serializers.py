@@ -198,16 +198,29 @@ class NewPasswordSerializer(serializers.Serializer):
 
 
 # ////////////////////////////////////////////////////////
-# //////////////////   USER EDIT    //////////////////////
+# //////////////////   EMIAL EDIT    /////////////////////
 # ////////////////////////////////////////////////////////
-# class UserEditSerializer(serializers.Serializer):
-#     username = serializers.CharField(required=False, write_only=True)
-#     emial = serializers.EmailField(required=False, write_only=True)
-#     first_name = serializers.CharField(required=False, write_only=True)
-#     last_name = serializers.CharField(required=False, write_only=True)
-    
-#     def validate(self, data):
-#         email = data.get("email").lower()
-        
-#         if check_login_type(email) == "email":
-            
+class EmailEditSerializer(serializers.Serializer):
+
+    old_email = serializers.EmailField(required=True, write_only=True)
+    email = serializers.EmailField(required=True, write_only=True)
+
+    def validate(self, data):
+        old_emial = data.get("old_email")
+
+        if old_emial and check_login_type(old_emial) == "email":
+
+            user = User.objects.filter(email=old_emial)
+
+            if not user.exists():
+                raise ValidationError({"email": "email hato kiritilgan"})
+
+            code = user.first().create_confirmation()
+
+            send_email(old_emial, code)
+
+        return data
+
+
+class EmailVerifySerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=4, required=True)
