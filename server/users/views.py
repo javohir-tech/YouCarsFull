@@ -179,7 +179,6 @@ class CodeVerifyView(APIView):
                     {
                         "success": True,
                         "message": "Code has been verified successfully.",
-                        "auth_status": user.auth_status,
                         "data": {"tokens": {"code_edit_token": str(token)}},
                     }
                 )
@@ -206,6 +205,8 @@ class NewPasswordView(APIView):
             return Response(
                 {
                     "success": True,
-                    "message": "parol o'zgartrildi , login qilshingizni soraymiz",
+                    "message": "Your password has been changed successfully. Please log in"
                 }
             )
+            
+

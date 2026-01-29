@@ -6,6 +6,8 @@ export const useUserStore = defineStore('user', {
             username: localStorage.getItem('username') || "",
             access_token: localStorage.getItem("access_token") || "",
             email: localStorage.getItem("email") || "",
+            verify_token: localStorage.getItem("verify_token") || "",
+            edit_password_token: localStorage.getItem("edit_password_token") || ""
         }
     ),
     getters: {
@@ -23,14 +25,30 @@ export const useUserStore = defineStore('user', {
 
         add_email(email) {
             this.email = email
-            localStorage.setItem("email" , email)
+            localStorage.setItem("email", email)
         },
-
-
+        add_verify_token(verify_token) {
+            this.verify_token = verify_token
+            localStorage.setItem("verify_token", verify_token)
+        },
+        remove_verify_token() {
+            this.verify_token = "",
+                localStorage.removeItem("verify_token")
+        },
+        add_edit_password_token(edit_password_token) {
+            this.edit_password_token = edit_password_token
+            localStorage.setItem("edit_password_token", edit_password_token)
+        },
+        remove_edit_password_token() {
+            this.edit_password_token = "",
+                localStorage.removeItem("edit_password_token")
+        },
         clear() {
             this.username = ""
             this.email = ""
             this.access_token = ""
+            this.verify_token = ""
+            this.edit_password_token = ""
         }
     }
 

@@ -144,16 +144,15 @@ const onFinish = async () => {
             }
         )
         message.success(data.message)
-
-        localStorage.setItem("edit_password_token", data.data.tokens.code_edit_token)
-        localStorage.removeItem("verify_token")
+        userStore.add_edit_password_token(data.data.tokens.code_edit_token)
+        userStore.remove_verify_token()
 
         code.forEach((_, index) => {
             code[index] = ''
         })
 
         inputRefs.value[0]?.focus()
-        
+
         router.push("newpass")
     } catch (error) {
         if (error.response) {
@@ -188,7 +187,7 @@ const resendCode = async () => {
         })
 
         notification.success({ message: "Successfully", description: data.message })
-        localStorage.setItem("verify_token", data.data.tokens.verify_token)
+        userStore.add_verify_token(data.data.tokens.verify_token)
         console.log(data)
         code.forEach((_, index) => {
             code[index] = ''

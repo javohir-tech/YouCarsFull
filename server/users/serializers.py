@@ -86,7 +86,7 @@ class LoginSerilazer(serializers.Serializer):
             if login_type == "username":
                 current_user = User.objects.get(username=user_input)
             elif login_type == "email":
-                current_user = User.objects.get(email=user_input)
+                current_user = User.objects.get(email__iexact=user_input)
         except ObjectDoesNotExist:
             raise ValidationError({"user": "User not found"})
 
@@ -123,7 +123,7 @@ class ForgetPasswordSerializer(serializers.Serializer):
                 current_user = User.objects.get(username=user_input)
                 user_email = current_user.email
             elif auth_type == "email":
-                current_user = User.objects.get(email=user_input)
+                current_user = User.objects.get(email__iexact=user_input)
                 user_email = current_user
         except ObjectDoesNotExist:
             raise ValidationError({"user": "User not found"})
@@ -167,13 +167,13 @@ class NewPasswordSerializer(serializers.Serializer):
         password = attrs["password"]
         confirm_password = attrs["confirm_password"]
 
-        if 8 > len(password) or len(password) > 32:
-            raise validate_password(
-                {"password": "The password length must be between 8 and 32 characters."}
+        if len(password) < 8 or len(password) > 32:
+            raise ValidationError(
+                {"password": "Password length must be between 8 and 32 characters."}
             )
 
         if password != confirm_password:
-            raise ValidationError({"password": "parol bir biriga mos emas"})
+            raise ValidationError({"password": "Passwords do not match."})
 
         self.check_password(password)
 
@@ -184,14 +184,30 @@ class NewPasswordSerializer(serializers.Serializer):
         try:
             validate_password(password)
         except Exception as e:
-            raise ValidationError({"password": f"parol mos emas {e}"})
+            raise ValidationError({"password": f"Password is not valid: {e}"})
 
     def update(self, instance, validated_data):
         if validated_data.get("password"):
             instance.set_password(validated_data.get("password"))
+
         if instance.auth_status == Auth_STATUS.EDIT_PASSWORD:
             instance.auth_status = Auth_STATUS.REGISTER
 
         instance.save()
-
         return instance
+
+
+# ////////////////////////////////////////////////////////
+# //////////////////   USER EDIT    //////////////////////
+# ////////////////////////////////////////////////////////
+# class UserEditSerializer(serializers.Serializer):
+#     username = serializers.CharField(required=False, write_only=True)
+#     emial = serializers.EmailField(required=False, write_only=True)
+#     first_name = serializers.CharField(required=False, write_only=True)
+#     last_name = serializers.CharField(required=False, write_only=True)
+    
+#     def validate(self, data):
+#         email = data.get("email").lower()
+        
+#         if check_login_type(email) == "email":
+            

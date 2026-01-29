@@ -42,7 +42,9 @@ import { message } from 'ant-design-vue';
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { useUserStore } from '@/store/useUserStore';
 
+const userStore = useUserStore()
 const router = useRouter()
 
 const formState = reactive({
@@ -98,7 +100,8 @@ const onFinish = async (values) => {
                 }
             }
         )
-        localStorage.removeItem("edit_password_token")
+        
+        userStore.remove_edit_password_token()
         // console.log(data)
         message.success(data.message)
         router.push("login")

@@ -5,6 +5,8 @@ import mainLayout from '@/layout/mainLayout.vue'
 import { Home } from '@/views'
 import { forgetPassword, login, newPassword, singup, verifyCode } from '@/auth'
 import Profile from '@/profile/profile.vue'
+//////////////// STORE /////////////////
+import { useUserStore } from '@/store/useUserStore'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,23 +18,28 @@ const router = createRouter({
         ////// AUTH /////
         {
           path: "singup",
-          component: singup
+          component: singup,
+          meta: { guestOnly: true }
         },
         {
           path: "login",
-          component: login
+          component: login,
+          meta: { guestOnly: true }
         },
         {
           path: "forget",
-          component: forgetPassword
+          component: forgetPassword,
+          meta: { guestOnly: true }
         },
         {
           path: "verify",
-          component: verifyCode
+          component: verifyCode,
+          meta: { verify: true }
         },
         {
           path: "newpass",
-          component: newPassword
+          component: newPassword,
+          meta: { newpass: true }
         },
         {
           path: "",
@@ -42,11 +49,37 @@ const router = createRouter({
         ///////// PROFILE ///////////
         {
           path: "profile",
-          component: Profile
+          component: Profile,
+          meta: { requiresAuth: true }
         }
       ]
     }
   ],
+})
+
+router.beforeEach((to, from, next) => {
+  const userStore = useUserStore()
+  const access_token = userStore.access_token
+  const verify_token = userStore.verify_token
+  const edit_password_token = userStore.edit_password_token
+
+  if (to.meta.guestOnly && access_token) {
+    return next("/")
+  }
+
+  if (to.meta.verify && !verify_token) {
+    return next("/")
+  }
+
+  if (to.meta.newpass && !edit_password_token) {
+    return next("/")
+  }
+
+  if (to.meta.requiresAuth && !access_token) {
+    return next('/login')
+  }
+
+  next()
 })
 
 export default router

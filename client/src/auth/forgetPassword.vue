@@ -66,7 +66,7 @@ const onFinish = async (values) => {
             user_input: values.user_input
         })
         notification.success({ message: "Successfully", description: data.message })
-        localStorage.setItem("verify_token", data.data.tokens.verify_token)
+        userStore.add_verify_token(data.data.tokens.verify_token)
         router.push("verify")
         userStore.add_email(data.data.email)
         // console.log(data)
