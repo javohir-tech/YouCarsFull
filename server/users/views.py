@@ -7,6 +7,7 @@ from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
+from rest_framework import status
 
 # /////////// models ////////////
 from .models import User
@@ -22,6 +23,7 @@ from .serializers import (
     NewPasswordSerializer,
     EmailEditSerializer,
     EmailVerifySerializer,
+    UpdateUserSerializer,
 )
 
 # SIMPLE JWT
@@ -292,3 +294,29 @@ class EmailVerifyView(APIView):
                     "data": {"email": new_email, "username": user.username},
                 }
             )
+
+
+# ////////////////////////////////////////////////////////
+# ////////////////   UPDATE USER    /////////////////////
+# ////////////////////////////////////////////////////////
+class UpdateUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+
+        serializer = UpdateUserSerializer(instance=self.request.user, data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        serializer = UpdateUserSerializer(
+            instance=self.request.user, data=request.data, partial=True
+        )
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_200_OK)

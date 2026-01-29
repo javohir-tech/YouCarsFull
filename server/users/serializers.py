@@ -8,6 +8,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
+from django.core.validators import FileExtensionValidator
 
 # Rest Framework
 from rest_framework import serializers
@@ -227,5 +228,57 @@ class EmailEditSerializer(serializers.Serializer):
         return data
 
 
+# ////////////////////////////////////////////////////////
+# //////////////////   EMIAL VERIFY    ///////////////////
+# ////////////////////////////////////////////////////////
 class EmailVerifySerializer(serializers.Serializer):
     code = serializers.CharField(max_length=4, required=True)
+
+
+# ////////////////////////////////////////////////////////
+# ////////////////   UPDATE USER    /////////////////////
+# ////////////////////////////////////////////////////////
+class UpdateUserSerializer(serializers.Serializer):
+    photo = serializers.ImageField(
+        required=False,
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=["jpeg", "jpg", "png", "heic", "hief"]
+            )
+        ],
+    )
+    username = serializers.CharField(required=False)
+    first_name = serializers.CharField(required=False)
+    last_name = serializers.CharField(required=False)
+
+    def validate(self, data):
+        username = data.get("username")
+        first_name = data.get("first_name")
+        last_name = data.get("last_name")
+
+        for input in [username, first_name, last_name]:
+            self.check_input_len(input)
+
+        return data
+
+    @staticmethod
+    def check_input_len(value):
+        if value is None:
+            return None
+        if 8 > len(value) or len(value) > 32:
+            raise ValidationError(
+                {f"value": f"{value} 8 va 32 ta belgi orasida bolish kerak."}
+            )
+
+    def update(self, instance, validated_data):
+
+        photo = validated_data.get("photo", instance.photo)
+
+        instance.first_name = validated_data.get("first_name", instance.first_name)
+        instance.last_name = validated_data.get("last_name", instance.last_name)
+        instance.username = validated_data.get("username", instance.username)
+        instance.photo = photo
+
+        instance.save()
+
+        return instance
