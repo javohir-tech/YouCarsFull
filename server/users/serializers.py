@@ -210,14 +210,19 @@ class EmailEditSerializer(serializers.Serializer):
 
         if old_emial and check_login_type(old_emial) == "email":
 
-            user = User.objects.filter(email=old_emial)
+            user = User.objects.filter(email=old_emial).order_by("-created_time")
 
             if not user.exists():
-                raise ValidationError({"email": "email hato kiritilgan"})
+                raise ValidationError({"email": "user not found"})
 
-            code = user.first().create_confirmation()
+            user.first().create_confirmation()
 
-            send_email(old_emial, code)
+            code_verify = user.first().verify.filter(
+                expire_time__gte=timezone.now(), is_confirmed=False
+            )
+            if code_verify.count() > 1:
+                code_verify.last().delete()
+            send_email(old_emial, code_verify.last().code)
 
         return data
 

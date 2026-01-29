@@ -3,7 +3,7 @@
         <div class="registration-container">
             <div class="registration-card">
                 <h1 class="title">Подтверждение</h1>
-                <p class="subtitle">Введите код из письма отправленного на <strong>{{ userStore.email }}</strong>
+                <p class="subtitle">Код отправлен на ваш предыдущий email <strong>{{ userStore.email }}</strong>
                 </p>
 
                 <a-form :model="formState" @finish="onFinish" layout="vertical" class="registration-form">
@@ -35,9 +35,9 @@
                         </a-button>
                     </a-form-item>
 
-                    <!-- Edit Email Link -->
+                    <!-- Back Link -->
                     <div class="login-link">
-                        <router-link to="forget" class="edit-link">Редактировать</router-link>
+                        <router-link to="profile" class="edit-link">Назад</router-link>
                     </div>
                 </a-form>
             </div>
@@ -46,13 +46,12 @@
 </template>
 
 <script setup>
-import { message } from 'ant-design-vue';
 import { reactive, ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
 import { useUserStore } from '@/store/useUserStore';
+import axios from 'axios';
+import { message } from 'ant-design-vue';
 import api from '@/utils/axios';
-import { notification } from 'ant-design-vue';
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -65,11 +64,9 @@ const resending = ref(false)
 const timeLeft = ref(120)
 let timerInterval = null
 
-// Code to'liq kiritilganligini tekshirish
 const isCodeComplete = computed(() => {
     return code.every(digit => digit !== '')
 })
-
 
 const formattedTime = computed(() => {
     const minutes = Math.floor(timeLeft.value / 60)
@@ -82,7 +79,7 @@ const startTimer = () => {
         clearInterval(timerInterval)
     }
 
-    timeLeft.value = 120
+    timeLeft.value = 30
     timerInterval = setInterval(() => {
         if (timeLeft.value > 0) {
             timeLeft.value--
@@ -107,13 +104,11 @@ const handleInput = (index, event) => {
     }
 }
 
-
 const handleKeyDown = (index, event) => {
     if (event.key === 'Backspace' && !code[index] && index > 0) {
         inputRefs.value[index - 1]?.focus()
     }
 }
-
 
 const handlePaste = (event) => {
     event.preventDefault()
@@ -127,90 +122,82 @@ const handlePaste = (event) => {
     }
 }
 
-// Form submit
 const onFinish = async () => {
     const verificationCode = code.join('')
     loading.value = true
     try {
-        const verify_token = localStorage.getItem("verify_token")
-        const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/auth/verify/`,
+        const email_edit_token = userStore.email_edit_token
+        const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/auth/email/verify/`,
             {
                 code: verificationCode
             },
             {
                 headers: {
-                    Authorization: `Bearer ${verify_token}`
+                    Authorization: `Bearer ${email_edit_token}`
                 }
             }
         )
+
         message.success(data.message)
-        userStore.add_edit_password_token(data.data.tokens.code_edit_token)
-        userStore.remove_verify_token()
-
-        code.forEach((_, index) => {
-            code[index] = ''
-        })
-
-        inputRefs.value[0]?.focus()
-
-        router.push("newpass")
+        userStore.add_email(data.data.email)
+        userStore.remove_email_edit_token()
+        userStore.remove_new_email()
+        router.push("profile")
     } catch (error) {
         if (error.response) {
-            const errors = error.response
-            if (errors.data.code) {
-                message.error(errors.data.code)
-            } else if (errors.data.detail) {
-                message.error(errors.data.detail)
+            const errors = error.response.data
+            if (errors.code) {
+                message.error(errors.code)
+            } else if (errors.email) {
+                message.error(errors.email)
             } else {
-                message.error("An error occurred.")
+                message.error("hato")
             }
-
-            console.log(errors)
+            console.log(error.response)
         } else {
-            message.error("No connection to the server")
             console.log(error)
         }
     } finally {
         loading.value = false
     }
-
-
 }
 
-// Kodni qayta yuborish
 const resendCode = async () => {
     resending.value = true
+
     try {
-        const email = userStore.email
-        const { data } = await api.post('auth/forget/', {
-            user_input: email
+
+        const { data } = await api.post('auth/email/', {
+            old_email: userStore.email,
+            email: userStore.new_email,
         })
 
-        notification.success({ message: "Successfully", description: data.message })
-        userStore.add_verify_token(data.data.tokens.verify_token)
-        console.log(data)
+        message.success(data.message)
+        userStore.add_email_edit_token(data.data.token.email_edit_token)
         code.forEach((_, index) => {
             code[index] = ''
         })
         inputRefs.value[0]?.focus()
 
-
         startTimer()
+
     } catch (error) {
         if (error.response) {
-            const errors = error.response
-            console.log(errors)
-            if (errors.data.code) {
-                message.warning(errors.data.code[0])
-            } else if (errors.data.user) {
-                message.error(errors.data.user[0])
-            } else if (errors.data.input) {
-                message.error(errors.data.input[0])
+            const errors = error.response.data
+            if (errors.old_email) {
+                message.error(errors.old_email[0])
+            } else if (errors.email) {
+                message.error(errors.email[0])
+            } else if (errors.dateil) {
+                message.error(errors.dateil)
             } else {
                 message.error("An error occurred.")
             }
+
+            console.log(error.response)
         } else {
             message.error("No connection to the server.")
+            console.log(error)
         }
     } finally {
         resending.value = false
@@ -226,7 +213,7 @@ onUnmounted(() => {
     if (timerInterval) {
         clearInterval(timerInterval)
     }
-    userStore.remove_verify_token()
+    userStore.remove_email_edit_token()
 })
 </script>
 

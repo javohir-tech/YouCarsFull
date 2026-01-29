@@ -247,7 +247,7 @@ class EmailVerifyView(APIView):
     permission_classes = [EditEmailPermissions]
     authentication_classes = [EmailEditAuthentication]
 
-    def put(self, request):
+    def post(self, request):
 
         serializer = EmailVerifySerializer(
             instance=self.request.user, data=request.data
@@ -273,9 +273,6 @@ class EmailVerifyView(APIView):
             verify_code = user.verify.filter(
                 expire_time__gte=timezone.now(), code=code, is_confirmed=False
             )
-            print("=" * 50)
-            print(verify_code)
-            print("=" * 50)
 
             if verify_code.exists():
                 verify_obj = verify_code.first()
@@ -292,5 +289,6 @@ class EmailVerifyView(APIView):
                 {
                     "success": True,
                     "message": "Email address has been successfully updated.",
+                    "data": {"email": new_email, "username": user.username},
                 }
             )

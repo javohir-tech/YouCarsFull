@@ -39,7 +39,7 @@
 
 <script setup>
 import { message } from 'ant-design-vue';
-import { reactive, ref } from 'vue';
+import { onUnmounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { useUserStore } from '@/store/useUserStore';
@@ -100,7 +100,7 @@ const onFinish = async (values) => {
                 }
             }
         )
-        
+
         userStore.remove_edit_password_token()
         // console.log(data)
         message.success(data.message)
@@ -130,6 +130,10 @@ const onFinish = async (values) => {
 const onFinishFailed = (errorInfo) => {
     console.log('Failed:', errorInfo);
 };
+
+onUnmounted(() => {
+    userStore.remove_edit_password_token()
+})
 </script>
 
 <style scoped>
