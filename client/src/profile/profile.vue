@@ -18,23 +18,23 @@
                 </div>
             </form>
 
-            <form action="">
+            <form @submit.prevent="handleUpdateUser">
                 <div>
                     <p>Change User</p>
                     <div style="margin-bottom: 10px;">
-                        <input type="text" placeholder="username">
+                        <input type="text" placeholder="username" v-model="username">
                     </div>
                     <div style="margin-bottom: 10px;">
-                        <input type="text" placeholder="first_name">
+                        <input type="text" placeholder="first_name" v-model="first_name">
                     </div>
                     <div style="margin-bottom: 10px;">
-                        <input type="text" placeholder="last_name">
+                        <input type="text" placeholder="last_name" v-model="last_name">
                     </div>
                     <div style="margin-bottom: 10px;">
-                        <input type="file">
+                        <input type="file" @change="handlechange"  accept="image/*">
                     </div>
 
-                    <a-button type="primary">Saqlash</a-button>
+                    <a-button type="primary" html-type="submit">Saqlash</a-button>
                 </div>
             </form>
         </div>
@@ -52,6 +52,38 @@ const userStore = useUserStore()
 const email = ref(userStore.email)
 const loading = ref(false)
 const router = useRouter()
+
+const username = ref("")
+const first_name = ref("")
+const last_name = ref("")
+const photo = ref(null)
+const handlechange = (event) => {
+    photo.value = event.target.files?.[0]
+}
+
+const handleUpdateUser = async () => {
+    loading.value = true
+    try {
+        const formData = new FormData()
+        if(photo.value) formData.append('photo' , photo.value)
+        formData.append('username' ,  username.value)
+        formData.append("first_name" , first_name.value)
+        formData.append("last_name" ,  last_name.value)
+
+        const { data } = await api.put('auth/user/update/', formData ,  {
+            headers : {
+                "Content-Type": "multipart/form-data"
+            }
+        })
+
+        console.log(data)
+    } catch (error) {
+        console.log(error.response)
+    }finally{
+        loading.value = false
+    }
+}
+
 const handleLogOut = async () => {
     loading.value = true
     try {
