@@ -9,6 +9,29 @@ from django.core.validators import FileExtensionValidator
 
 
 # //////////////////////////////////////////////////////
+# ////////// AVTOMABIL TYPE       //////////////////////
+# //////////////////////////////////////////////////////
+class AvtoMobileType(BaseModel):
+    class AVTOMABIL_TYPE(models.TextChoices):
+        CAR = "CR", "Car"
+        COMMERCIAL_TRANSPORT = (
+            "CT",
+            "Commercial transport",
+        )
+        Motorcycles = "MO"
+
+    name = models.CharField(
+        max_length=2,
+        unique=True,
+        choices=AVTOMABIL_TYPE.choices,
+        default=AVTOMABIL_TYPE.CAR,
+    )
+
+    def __str__(self):
+        return self.name
+
+
+# //////////////////////////////////////////////////////
 # //////////////// MARKA       /////////////////////////
 # //////////////////////////////////////////////////////
 class Marka(BaseModel):
@@ -32,6 +55,18 @@ class Marka(BaseModel):
     def save(self, *args, **kwargs):
         self.add_marka()
         super().save(*args, **kwargs)
+
+
+class AvtoTypeMarka(BaseModel):
+    avto_type = models.ForeignKey(
+        AvtoMobileType, on_delete=models.CASCADE, related_name="markas"
+    )
+    marka = models.ForeignKey(
+        Marka, on_delete=models.CASCADE, related_name="avto_types"
+    )
+
+    def __str__(self):
+        return f"{self.avto_type.__str__()} and {self.marka.__str__()}"
 
 
 # //////////////////////////////////////////////////////
@@ -138,6 +173,9 @@ class Car(BaseModel):
 
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="cars")
     marka = models.ForeignKey(Marka, on_delete=models.CASCADE, related_name="cars")
+    avto_type = models.ForeignKey(
+        AvtoMobileType, on_delete=models.CASCADE, related_name="avtos"
+    )
     car_model = models.ForeignKey(
         CarModel, on_delete=models.CASCADE, related_name="cars"
     )
@@ -171,7 +209,7 @@ class Car(BaseModel):
 
     def is_available(self):
         return self.availability == self.AVAILABILITY_CHOICES.IN_STOCK
-    
+
     def __str__(self):
         return f"marka : {self.marka.__str__()} model:{self.car_model.__str__()} status:{self.status}"
 

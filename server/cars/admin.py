@@ -1,7 +1,30 @@
 from django.contrib import admin
 
 # MODELS
-from .models import Marka, CarModel, Color, Country, Fuel, Car, CarImage
+from .models import (
+    Marka,
+    CarModel,
+    Color,
+    Country,
+    Fuel,
+    Car,
+    CarImage,
+    AvtoMobileType,
+    AvtoTypeMarka,
+)
+
+
+@admin.register(AvtoMobileType)
+class AvtoTypeAdmin(admin.ModelAdmin):
+    list_display = ["name", "id"]
+
+
+@admin.register(AvtoTypeMarka)
+class AvtoTypeMarkaAdmin(admin.ModelAdmin):
+    list_display = ["avto_type", "marka", "id"]
+    list_filter = ["avto_type", "marka"]
+    search_fields = ["marka"]
+    list_per_page = 20
 
 
 @admin.register(Marka)
@@ -48,7 +71,7 @@ class FuelAdmin(admin.ModelAdmin):
 
 @admin.register(Car)
 class CarAdmin(admin.ModelAdmin):
-    list_display = ["id", "author", "car_model", "marka", "body" , "availability"]
+    list_display = ["id", "author", "car_model", "marka", "body", "availability"]
     list_filter = [
         "car_model",
         "marka",
@@ -58,12 +81,18 @@ class CarAdmin(admin.ModelAdmin):
         "fuel",
         "drive_type",
         "transmission_type",
-        "body", 
-        "availability", 
+        "body",
+        "availability",
     ]
     search_fields = ["year", "price", "marka__marka", "car_model__name"]
     list_per_page = 20
-    
+
+
+@admin.register(CarImage)
+class CarImageAdmin(admin.ModelAdmin):
+    list_display = ["car", "image", "is_main", "order"]
+    list_filter = ["car", "is_main"]
+    list_per_page = 20
 
 
 # Register your models here.
