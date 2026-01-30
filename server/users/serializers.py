@@ -6,7 +6,10 @@ from .models import Auth_STATUS
 # DJANGO
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import (
+    ObjectDoesNotExist,
+    ValidationError as DjangoValidationError,
+)
 from django.utils import timezone
 from django.core.validators import FileExtensionValidator
 
@@ -267,7 +270,7 @@ class UpdateUserSerializer(serializers.Serializer):
             return None
         if 8 > len(value) or len(value) > 32:
             raise ValidationError(
-                {f"value": f"{value} 8 va 32 ta belgi orasida bolish kerak."}
+                {"value": f"{value} must be between 8 and 32 characters."}
             )
 
     def update(self, instance, validated_data):
@@ -278,6 +281,43 @@ class UpdateUserSerializer(serializers.Serializer):
         instance.last_name = validated_data.get("last_name", instance.last_name)
         instance.username = validated_data.get("username", instance.username)
         instance.photo = photo
+
+        instance.save()
+
+        return instance
+
+
+# ////////////////////////////////////////////////////////
+# ////////////////   UPDATE PASSWORD  ////////////////////
+# ////////////////////////////////////////////////////////
+class UpdatePasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True, required=True)
+    new_password = serializers.CharField(write_only=True, required=True)
+    confirm_password = serializers.CharField(write_only=True, required=True)
+
+    def validate(self, attrs):
+        new_password = attrs.get("new_password")
+        confirm_password = attrs.get("confirm_password")
+
+        if new_password != confirm_password:
+            raise ValidationError({"confirm_password": "Passwords do not match"})
+
+        try:
+            validate_password(new_password)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError({"new_password": e.messages})
+
+        return attrs
+
+    def update(self, instance, validated_data):
+        username = instance.username
+        password = validated_data.get("password")
+        try:
+            authenticate(username=username, password=password)
+        except Exception as e:
+            raise ValidationError({"password": f"authemticated hatosi {e}"})
+
+        instance.set_password(password)
 
         instance.save()
 

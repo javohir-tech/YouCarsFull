@@ -31,7 +31,7 @@
                         <input type="text" placeholder="last_name" v-model="last_name">
                     </div>
                     <div style="margin-bottom: 10px;">
-                        <input type="file" @change="handlechange"  accept="image/*">
+                        <input type="file" @change="handlechange" accept="image/*">
                     </div>
 
                     <a-button type="primary" html-type="submit">Saqlash</a-button>
@@ -65,21 +65,26 @@ const handleUpdateUser = async () => {
     loading.value = true
     try {
         const formData = new FormData()
-        if(photo.value) formData.append('photo' , photo.value)
-        formData.append('username' ,  username.value)
-        formData.append("first_name" , first_name.value)
-        formData.append("last_name" ,  last_name.value)
+        if (photo.value) formData.append('photo', photo.value)
+        formData.append('username', username.value)
+        formData.append("first_name", first_name.value)
+        formData.append("last_name", last_name.value)
 
-        const { data } = await api.put('auth/user/update/', formData ,  {
-            headers : {
+        const { data } = await api.put('auth/user/update/', formData, {
+            headers: {
                 "Content-Type": "multipart/form-data"
             }
         })
-
+        message.success("ozgartirldi")
+        photo.value = data.photo
+        username.value = data.username
+        userStore.username= data.username
+        first_name.value = data.first_name
+        last_name.value = data.last_name
         console.log(data)
     } catch (error) {
         console.log(error.response)
-    }finally{
+    } finally {
         loading.value = false
     }
 }

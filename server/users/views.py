@@ -24,6 +24,7 @@ from .serializers import (
     EmailEditSerializer,
     EmailVerifySerializer,
     UpdateUserSerializer,
+    UpdatePasswordSerializer,
 )
 
 # SIMPLE JWT
@@ -320,3 +321,27 @@ class UpdateUserView(APIView):
             serializer.save()
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# ////////////////////////////////////////////////////////
+# ////////////////   UPDATE PASSWORD  ////////////////////
+# ////////////////////////////////////////////////////////
+class UpdatePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+
+        serializer = UpdatePasswordSerializer(
+            instance=self.request.user, data=request.data
+        )
+
+        if serializer.is_valid(raise_exception=True):
+            print()
+            new_pass =  serializer.save()
+            print(new_pass)
+            return Response(
+                {
+                    "success" : True,  
+                    "message" : "parol muvafaqiyatli ozgartirildi"
+                }
+            )
