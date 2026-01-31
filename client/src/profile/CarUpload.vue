@@ -1,0 +1,976 @@
+<template>
+  <div class="add-car-page">
+    <div class="container">
+      <div class="page-header">
+        <h1>Разместите объявление</h1>
+        <p>Укажите данные об автомобиле для размещения объявления</p>
+      </div>
+
+      <!-- Step 1: Vehicle Type Selection -->
+      <div class="type-tabs">
+        <a-radio-group v-model:value="selectedType" button-style="solid" size="large">
+          <a-radio-button value="automobile">Автомобили</a-radio-button>
+          <a-radio-button value="commercial">Коммерческий транспорт</a-radio-button>
+          <a-radio-button value="motorcycle">Мотоциклы</a-radio-button>
+        </a-radio-group>
+      </div>
+
+      <!-- Step 2: Brand Selection -->
+      <div class="form-section">
+        <a-select
+          v-model:value="formData.marka"
+          placeholder="Марка"
+          size="large"
+          show-search
+          :loading="loadingBrands"
+          :disabled="!selectedType"
+          @change="handleBrandChange"
+          :filter-option="filterOption"
+        >
+          <a-select-option v-for="brand in brands" :key="brand.id" :value="brand.id">
+            {{ brand.name }}
+          </a-select-option>
+        </a-select>
+      </div>
+
+      <!-- Step 3: Model Selection -->
+      <div class="form-section" v-if="formData.marka">
+        <a-select
+          v-model:value="formData.car_model"
+          placeholder="Модель"
+          size="large"
+          show-search
+          :loading="loadingModels"
+          @change="handleModelChange"
+          :filter-option="filterOption"
+        >
+          <a-select-option v-for="model in models" :key="model.id" :value="model.id">
+            {{ model.name }}
+          </a-select-option>
+        </a-select>
+      </div>
+
+      <!-- Main Form (Shows after model is selected) -->
+      <div v-if="formData.car_model" class="main-form">
+        
+        <!-- Characteristics Section -->
+        <div class="characteristics-section">
+          <h2>Характеристики</h2>
+          
+          <a-form layout="vertical" :model="formData">
+            <a-row :gutter="16">
+              <!-- Year -->
+              <a-col :span="12">
+                <a-form-item label="Год выпуска">
+                  <a-input-number
+                    v-model:value="formData.year"
+                    :min="1951"
+                    :max="currentYear"
+                    placeholder="2024"
+                    style="width: 100%"
+                    size="large"
+                  />
+                </a-form-item>
+              </a-col>
+
+              <!-- Price -->
+              <a-col :span="12">
+                <a-form-item label="Пробег">
+                  <a-input-number
+                    v-model:value="formData.milage"
+                    :min="0"
+                    :max="2000000"
+                    placeholder="16 000"
+                    style="width: 100%"
+                    size="large"
+                  >
+                    <template #addonAfter>км</template>
+                  </a-input-number>
+                </a-form-item>
+              </a-col>
+
+              <!-- Country -->
+              <a-col :span="12">
+                <a-form-item label="Страна">
+                  <a-select
+                    v-model:value="formData.country"
+                    placeholder="США"
+                    size="large"
+                    show-search
+                    :loading="loadingCountries"
+                    :filter-option="filterOption"
+                  >
+                    <a-select-option v-for="country in countries" :key="country.id" :value="country.id">
+                      {{ country.name }}
+                    </a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+
+              <!-- Fuel -->
+              <a-col :span="12">
+                <a-form-item label="Топливо">
+                  <a-select
+                    v-model:value="formData.fuel"
+                    placeholder="Бензин"
+                    size="large"
+                    :loading="loadingFuels"
+                  >
+                    <a-select-option v-for="fuel in fuels" :key="fuel.id" :value="fuel.id">
+                      {{ fuel.name }}
+                    </a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+
+              <!-- Displacement -->
+              <a-col :span="12">
+                <a-form-item label="Объем">
+                  <a-input-number
+                    v-model:value="formData.displacement"
+                    :min="0"
+                    :max="9.9"
+                    :step="0.1"
+                    placeholder="1.8"
+                    style="width: 100%"
+                    size="large"
+                  >
+                    <template #addonAfter>л</template>
+                  </a-input-number>
+                </a-form-item>
+              </a-col>
+
+              <!-- Power -->
+              <a-col :span="12">
+                <a-form-item label="Мощность">
+                  <a-input-number
+                    v-model:value="formData.power"
+                    :min="0"
+                    :max="2000"
+                    placeholder="153"
+                    style="width: 100%"
+                    size="large"
+                  >
+                    <template #addonAfter>л.с</template>
+                  </a-input-number>
+                </a-form-item>
+              </a-col>
+
+              <!-- Transmission -->
+              <a-col :span="12">
+                <a-form-item label="Привод">
+                  <a-select
+                    v-model:value="formData.drive_type"
+                    placeholder="Передний"
+                    size="large"
+                  >
+                    <a-select-option value="FWD">Передний</a-select-option>
+                    <a-select-option value="RWD">Задний</a-select-option>
+                    <a-select-option value="AWD">Полный</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+
+              <!-- КПП -->
+              <a-col :span="12">
+                <a-form-item label="КПП">
+                  <a-select
+                    v-model:value="formData.transmission_type"
+                    placeholder="Автомат"
+                    size="large"
+                  >
+                    <a-select-option value="MT">Механика</a-select-option>
+                    <a-select-option value="AT">Автомат</a-select-option>
+                    <a-select-option value="CV">Вариатор</a-select-option>
+                    <a-select-option value="RB">Робот</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+
+              <!-- Doors Count -->
+              <a-col :span="12">
+                <a-form-item label="Количество дверей">
+                  <a-select
+                    v-model:value="formData.doors_count"
+                    placeholder="5"
+                    size="large"
+                  >
+                    <a-select-option :value="2">2</a-select-option>
+                    <a-select-option :value="3">3</a-select-option>
+                    <a-select-option :value="4">4</a-select-option>
+                    <a-select-option :value="5">5</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+
+              <!-- Body Type -->
+              <a-col :span="12">
+                <a-form-item label="Кузов">
+                  <a-select
+                    v-model:value="formData.body"
+                    placeholder="Седан"
+                    size="large"
+                  >
+                    <a-select-option value="sedan">Седан</a-select-option>
+                    <a-select-option value="hatchback">Хэтчбек</a-select-option>
+                    <a-select-option value="suv">Внедорожник</a-select-option>
+                    <a-select-option value="wagon">Универсал</a-select-option>
+                    <a-select-option value="coupe">Купе</a-select-option>
+                    <a-select-option value="minivan">Минивэн</a-select-option>
+                    <a-select-option value="pickup">Пикап</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+
+              <!-- Condition -->
+              <a-col :span="12">
+                <a-form-item label="Состояние">
+                  <a-select
+                    v-model:value="formData.condition"
+                    placeholder="С пробегом"
+                    size="large"
+                  >
+                    <a-select-option value="new">Новый</a-select-option>
+                    <a-select-option value="used">С пробегом</a-select-option>
+                    <a-select-option value="damaged">Битый</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+
+              <!-- Color -->
+              <a-col :span="12">
+                <a-form-item label="Цвет">
+                  <a-select
+                    v-model:value="formData.color"
+                    placeholder="Белый"
+                    size="large"
+                    :loading="loadingColors"
+                  >
+                    <a-select-option v-for="color in colors" :key="color.id" :value="color.id">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <span 
+                          :style="{
+                            display: 'inline-block',
+                            width: '16px',
+                            height: '16px',
+                            borderRadius: '50%',
+                            backgroundColor: color.code || '#000',
+                            border: '1px solid #d9d9d9'
+                          }"
+                        ></span>
+                        {{ color.name }}
+                      </div>
+                    </a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+            </a-row>
+
+            <!-- Availability Radio -->
+            <a-form-item>
+              <a-radio-group v-model:value="formData.availability">
+                <a-radio value="in_stock">В наличии</a-radio>
+                <a-radio value="on_order">Под заказ</a-radio>
+              </a-radio-group>
+            </a-form-item>
+          </a-form>
+        </div>
+
+        <!-- Photos Section -->
+        <div class="photos-section">
+          <h2>Фото</h2>
+          <p class="section-subtitle">Загрузите фото вашего автомобиля четко с разных ракурсов</p>
+          
+          <div class="upload-container">
+            <div class="uploaded-images">
+              <div 
+                v-for="(image, index) in uploadedImages" 
+                :key="index"
+                class="image-item"
+              >
+                <img :src="image.url" :alt="`Car photo ${index + 1}`" />
+                <div class="image-overlay">
+                  <a-button 
+                    type="text" 
+                    danger 
+                    @click="removeImage(index)"
+                    :icon="h(DeleteOutlined)"
+                  />
+                </div>
+                <a-progress 
+                  v-if="image.uploading"
+                  :percent="image.progress"
+                  :show-info="false"
+                  style="position: absolute; bottom: 0; left: 0; right: 0;"
+                />
+              </div>
+
+              <!-- Upload Button -->
+              <div 
+                v-if="uploadedImages.length < 6"
+                class="upload-button"
+                @click="triggerFileInput"
+              >
+                <CameraOutlined style="font-size: 32px; color: #1890ff;" />
+                <p>Выберите или перетащите фото</p>
+              </div>
+            </div>
+            <input 
+              ref="fileInput"
+              type="file"
+              accept="image/*"
+              multiple
+              style="display: none;"
+              @change="handleFileSelect"
+            />
+          </div>
+        </div>
+
+        <!-- Description Section -->
+        <div class="description-section">
+          <h2>Описание</h2>
+          <p class="section-subtitle">Не указывайте ссылки на источники, цены, контакты и не предлагайте другие услуги! Объявление не пройдет модерацию</p>
+          
+          <a-form-item>
+            <a-textarea
+              v-model:value="formData.description"
+              placeholder="Четко опишите вашу авто"
+              :rows="6"
+              :maxlength="1200"
+              show-count
+            />
+          </a-form-item>
+        </div>
+
+        <!-- Price Section -->
+        <div class="price-section">
+          <h2>Цена</h2>
+          <a-form-item>
+            <a-input-number
+              v-model:value="formData.price"
+              :min="0"
+              :max="999999999"
+              placeholder="1 850 000"
+              size="large"
+              style="width: 100%"
+            >
+              <template #addonAfter>
+                <a-select v-model:value="currency" style="width: 60px">
+                  <a-select-option value="USD">$</a-select-option>
+                  <a-select-option value="UZS">сўм</a-select-option>
+                </a-select>
+              </template>
+            </a-input-number>
+          </a-form-item>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="submit-section">
+          <a-button 
+            type="primary" 
+            size="large" 
+            block
+            :loading="submitting"
+            @click="handleSubmit"
+          >
+            Опубликовать объявления
+          </a-button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, computed, h, onMounted } from 'vue';
+import { message } from 'ant-design-vue';
+import { CameraOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+
+// State
+const selectedType = ref('automobile');
+const formData = reactive({
+  avto_type: null,
+  marka: null,
+  car_model: null,
+  country: null,
+  color: null,
+  fuel: null,
+  price: null,
+  year: null,
+  milage: null,
+  displacement: null,
+  power: null,
+  drive_type: null,
+  transmission_type: null,
+  doors_count: null,
+  description: '',
+  body: null,
+  condition: null,
+  availability: 'in_stock',
+  status: 'AC' // Active status
+});
+
+const currency = ref('USD');
+const currentYear = new Date().getFullYear();
+
+// Loading states
+const loadingBrands = ref(false);
+const loadingModels = ref(false);
+const loadingCountries = ref(false);
+const loadingColors = ref(false);
+const loadingFuels = ref(false);
+const submitting = ref(false);
+
+// Data lists
+const brands = ref([]);
+const models = ref([]);
+const countries = ref([]);
+const colors = ref([]);
+const fuels = ref([]);
+
+// Images
+const uploadedImages = ref([]);
+const fileInput = ref(null);
+const createdCarId = ref(null);
+
+// API Functions (sizning API logikangiz uchun)
+const api = {
+  // Avto turlariga mos markalari olish
+  async getBrandsByType(typeId) {
+    // Bu yerda sizning API chaqiruvingiz
+    // Example:
+    // const response = await fetch(`/api/brands/?avto_type=${typeId}`);
+    // return response.json();
+    
+    // Mock data for demonstration
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([
+          { id: '1', name: 'Hyundai' },
+          { id: '2', name: 'Toyota' },
+          { id: '3', name: 'BMW' },
+          { id: '4', name: 'Mercedes-Benz' },
+        ]);
+      }, 500);
+    });
+  },
+
+  // Markaga mos modellar olish
+  async getModelsByBrand(brandId) {
+    // Bu yerda sizning API chaqiruvingiz
+    // Example:
+    // const response = await fetch(`/api/models/?marka=${brandId}`);
+    // return response.json();
+    
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([
+          { id: '1', name: 'Sonata' },
+          { id: '2', name: 'Elantra' },
+          { id: '3', name: 'Tucson' },
+        ]);
+      }, 500);
+    });
+  },
+
+  // Davlatlar ro'yxati
+  async getCountries() {
+    // const response = await fetch('/api/countries/');
+    // return response.json();
+    
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([
+          { id: '1', name: 'США' },
+          { id: '2', name: 'Корея' },
+          { id: '3', name: 'Германия' },
+          { id: '4', name: 'Япония' },
+        ]);
+      }, 300);
+    });
+  },
+
+  // Ranglar ro'yxati
+  async getColors() {
+    // const response = await fetch('/api/colors/');
+    // return response.json();
+    
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([
+          { id: '1', name: 'Белый', code: '#FFFFFF' },
+          { id: '2', name: 'Черный', code: '#000000' },
+          { id: '3', name: 'Серый', code: '#808080' },
+          { id: '4', name: 'Красный', code: '#FF0000' },
+          { id: '5', name: 'Синий', code: '#0000FF' },
+        ]);
+      }, 300);
+    });
+  },
+
+  // Yoqilg'i turlari
+  async getFuels() {
+    // const response = await fetch('/api/fuels/');
+    // return response.json();
+    
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([
+          { id: '1', name: 'Бензин' },
+          { id: '2', name: 'Дизель' },
+          { id: '3', name: 'Газ' },
+          { id: '4', name: 'Электро' },
+          { id: '5', name: 'Гибрид' },
+        ]);
+      }, 300);
+    });
+  },
+
+  // Xarakteristikalar yuborish
+  async createCar(data) {
+    // const response = await fetch('/api/cars/', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify(data)
+    // });
+    // return response.json();
+    
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ id: 'car-123', ...data });
+      }, 1000);
+    });
+  },
+
+  // Rasm yuklash
+  async uploadImage(carId, file, onProgress) {
+    // const formData = new FormData();
+    // formData.append('car_id', carId);
+    // formData.append('image', file);
+    
+    // const xhr = new XMLHttpRequest();
+    // xhr.upload.addEventListener('progress', (e) => {
+    //   if (e.lengthComputable) {
+    //     const percentComplete = (e.loaded / e.total) * 100;
+    //     onProgress(percentComplete);
+    //   }
+    // });
+    
+    // return new Promise((resolve, reject) => {
+    //   xhr.onload = () => resolve(JSON.parse(xhr.response));
+    //   xhr.onerror = () => reject(xhr.statusText);
+    //   xhr.open('POST', '/api/car-images/');
+    //   xhr.send(formData);
+    // });
+
+    // Mock upload with progress
+    return new Promise((resolve) => {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        onProgress(progress);
+        if (progress >= 100) {
+          clearInterval(interval);
+          resolve({ 
+            id: Math.random().toString(36).substr(2, 9),
+            url: URL.createObjectURL(file)
+          });
+        }
+      }, 200);
+    });
+  }
+};
+
+// Methods
+const filterOption = (input, option) => {
+  return option.children[0].children.toLowerCase().indexOf(input.toLowerCase()) >= 0;
+};
+
+const handleBrandChange = async (brandId) => {
+  formData.car_model = null;
+  models.value = [];
+  
+  if (brandId) {
+    loadingModels.value = true;
+    try {
+      models.value = await api.getModelsByBrand(brandId);
+    } catch (error) {
+      message.error('Modellarni yuklashda xatolik');
+    } finally {
+      loadingModels.value = false;
+    }
+  }
+};
+
+const handleModelChange = async () => {
+  // Model tanlangandan keyin, boshqa ma'lumotlarni yuklash
+  if (!countries.value.length) {
+    loadingCountries.value = true;
+    try {
+      countries.value = await api.getCountries();
+    } catch (error) {
+      message.error('Davlatlarni yuklashda xatolik');
+    } finally {
+      loadingCountries.value = false;
+    }
+  }
+
+  if (!colors.value.length) {
+    loadingColors.value = true;
+    try {
+      colors.value = await api.getColors();
+    } catch (error) {
+      message.error('Ranglarni yuklashda xatolik');
+    } finally {
+      loadingColors.value = false;
+    }
+  }
+
+  if (!fuels.value.length) {
+    loadingFuels.value = true;
+    try {
+      fuels.value = await api.getFuels();
+    } catch (error) {
+      message.error('Yoqilg\'i turlarini yuklashda xatolik');
+    } finally {
+      loadingFuels.value = false;
+    }
+  }
+};
+
+const triggerFileInput = () => {
+  fileInput.value?.click();
+};
+
+const handleFileSelect = (event) => {
+  const files = Array.from(event.target.files);
+  const remainingSlots = 6 - uploadedImages.value.length;
+  
+  if (files.length > remainingSlots) {
+    message.warning(`Faqat ${remainingSlots} ta rasm qo'shishingiz mumkin`);
+    return;
+  }
+
+  files.forEach(file => {
+    if (file.type.startsWith('image/')) {
+      const imageObj = {
+        file,
+        url: URL.createObjectURL(file),
+        uploading: false,
+        progress: 0,
+        uploaded: false
+      };
+      uploadedImages.value.push(imageObj);
+    }
+  });
+
+  // Reset input
+  event.target.value = '';
+};
+
+const removeImage = (index) => {
+  uploadedImages.value.splice(index, 1);
+};
+
+const uploadImages = async (carId) => {
+  const uploadPromises = uploadedImages.value
+    .filter(img => !img.uploaded)
+    .map(async (imageObj) => {
+      imageObj.uploading = true;
+      try {
+        const result = await api.uploadImage(
+          carId, 
+          imageObj.file,
+          (progress) => {
+            imageObj.progress = progress;
+          }
+        );
+        imageObj.uploaded = true;
+        imageObj.uploading = false;
+        return result;
+      } catch (error) {
+        message.error('Rasmni yuklashda xatolik');
+        imageObj.uploading = false;
+        throw error;
+      }
+    });
+
+  await Promise.all(uploadPromises);
+};
+
+const validateForm = () => {
+  const errors = [];
+
+  if (!formData.marka) errors.push('Markani tanlang');
+  if (!formData.car_model) errors.push('Modelni tanlang');
+  if (!formData.year) errors.push('Yilni kiriting');
+  if (!formData.price || formData.price <= 0) errors.push('Narxni kiriting');
+  if (!formData.country) errors.push('Davlatni tanlang');
+  if (!formData.fuel) errors.push('Yoqilg\'i turini tanlang');
+  if (!formData.color) errors.push('Rangni tanlang');
+  if (!formData.body) errors.push('Kuzovni tanlang');
+  if (!formData.condition) errors.push('Holatni tanlang');
+  if (!formData.drive_type) errors.push('Privodini tanlang');
+  if (!formData.transmission_type) errors.push('KPP ni tanlang');
+  if (!formData.doors_count) errors.push('Eshiklar sonini tanlang');
+  if (!formData.description || formData.description.length < 10) {
+    errors.push('Kamida 10 ta belgidan iborat tavsif kiriting');
+  }
+  if (uploadedImages.value.length === 0) {
+    errors.push('Kamida 1 ta rasm yuklang');
+  }
+
+  if (errors.length > 0) {
+    errors.forEach(err => message.error(err));
+    return false;
+  }
+
+  return true;
+};
+
+const handleSubmit = async () => {
+  if (!validateForm()) return;
+
+  submitting.value = true;
+
+  try {
+    // Get avto_type ID based on selected type
+    const typeMap = {
+      'automobile': 'auto-type-id-1',
+      'commercial': 'auto-type-id-2',
+      'motorcycle': 'auto-type-id-3'
+    };
+    formData.avto_type = typeMap[selectedType.value];
+
+    // Step 1: Create car with characteristics
+    const carData = { ...formData };
+    const createdCar = await api.createCar(carData);
+    createdCarId.value = createdCar.id;
+
+    message.success('Avtomobil ma\'lumotlari saqlandi');
+
+    // Step 2: Upload images
+    if (uploadedImages.value.length > 0) {
+      await uploadImages(createdCar.id);
+      message.success('Rasmlar yuklandi');
+    }
+
+    message.success('E\'lon muvaffaqiyatli yaratildi!');
+    
+    // Redirect or reset form
+    // router.push('/my-listings');
+    
+  } catch (error) {
+    message.error('E\'lonni yaratishda xatolik yuz berdi');
+    console.error(error);
+  } finally {
+    submitting.value = false;
+  }
+};
+
+// Load initial data for selected type
+const loadBrandsForType = async () => {
+  const typeMap = {
+    'automobile': 'auto-type-id-1',
+    'commercial': 'auto-type-id-2',
+    'motorcycle': 'auto-type-id-3'
+  };
+
+  loadingBrands.value = true;
+  try {
+    brands.value = await api.getBrandsByType(typeMap[selectedType.value]);
+  } catch (error) {
+    message.error('Markalarni yuklashda xatolik');
+  } finally {
+    loadingBrands.value = false;
+  }
+};
+
+// Watch for type change
+import { watch } from 'vue';
+watch(selectedType, () => {
+  formData.marka = null;
+  formData.car_model = null;
+  models.value = [];
+  loadBrandsForType();
+});
+
+// Initialize
+onMounted(() => {
+  loadBrandsForType();
+});
+</script>
+
+<style scoped>
+.add-car-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 40px 0;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #000;
+}
+
+.page-header p {
+  font-size: 14px;
+  color: #666;
+}
+
+.type-tabs {
+  margin-bottom: 24px;
+}
+
+.type-tabs :deep(.ant-radio-group) {
+  width: 100%;
+  display: flex;
+}
+
+.type-tabs :deep(.ant-radio-button-wrapper) {
+  flex: 1;
+  text-align: center;
+}
+
+.form-section {
+  margin-bottom: 16px;
+}
+
+.main-form {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  margin-top: 24px;
+}
+
+.characteristics-section,
+.photos-section,
+.description-section,
+.price-section {
+  margin-bottom: 32px;
+}
+
+.characteristics-section h2,
+.photos-section h2,
+.description-section h2,
+.price-section h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #000;
+}
+
+.section-subtitle {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.upload-container {
+  margin-top: 16px;
+}
+
+.uploaded-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.image-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #d9d9d9;
+}
+
+.image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.image-item:hover .image-overlay {
+  opacity: 1;
+}
+
+.image-overlay button {
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+}
+
+.upload-button {
+  aspect-ratio: 1;
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: #fafafa;
+}
+
+.upload-button:hover {
+  border-color: #1890ff;
+  background: #f0f7ff;
+}
+
+.upload-button p {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.submit-section {
+  margin-top: 32px;
+}
+
+.submit-section :deep(.ant-btn) {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+:deep(.ant-form-item-label > label) {
+  font-weight: 500;
+}
+
+:deep(.ant-select),
+:deep(.ant-input-number) {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .page-header h1 {
+    font-size: 24px;
+  }
+
+  .uploaded-images {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+}
+</style>

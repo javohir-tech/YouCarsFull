@@ -1,6 +1,16 @@
 <template>
     <div class="container">
         <div style="margin: 30px 0px">
+
+            <div>
+                <h1>Upload</h1>
+                <router-link to="upload">
+                    <a-button>
+                        upload
+                    </a-button>
+                </router-link>
+            </div>
+
             <h1>Profile</h1>
 
             <div style="margin-bottom: 20px;">
@@ -78,7 +88,7 @@ const handleUpdateUser = async () => {
         message.success("ozgartirldi")
         photo.value = data.photo
         username.value = data.username
-        userStore.username= data.username
+        userStore.username = data.username
         first_name.value = data.first_name
         last_name.value = data.last_name
         console.log(data)

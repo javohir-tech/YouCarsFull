@@ -1,7 +1,7 @@
 import re
 from datetime import date
 
-#///////////////// djnago //////////////////////
+# ///////////////// djnago //////////////////////
 from django.core.validators import FileExtensionValidator
 
 # //////////////////// REST FRAMEWORK /////////////////
@@ -182,12 +182,24 @@ class AddCarSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         user = self.context["request"].user
-        validated_data["car_model"] = CarModel.objects.filter(
+        validated_data["car_model"] = CarModel.objects.get(
             id=validated_data.pop("car_model")
-        ).first()
+        )
         validated_data["author"] = user
         return Car.objects.create(**validated_data)
-    
+
+    def update(self, instance, validated_data):
+        if "car_model" in validated_data:
+            instance.car_model = CarModel.objects.get(
+                id=validated_data.pop("car_model")
+            )
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["id"] = instance.id
@@ -363,31 +375,27 @@ class AddCarSerializer(serializers.Serializer):
 # ////////////   UPLOAD CAR IMAGE      ////////////////////
 # /////////////////////////////////////////////////////////
 class CarImageUploadSerializer(serializers.Serializer):
-    car = serializers.PrimaryKeyRelatedField(queryset = Car.objects.all())
-    image = serializers.ImageField(validators=[
+    car = serializers.PrimaryKeyRelatedField(queryset=Car.objects.all())
+    image = serializers.ImageField(
+        validators=[
             FileExtensionValidator(
                 allowed_extensions=["jpeg", "jpg", "png", "heic", "heif"]
             )
-        ],)
+        ],
+    )
     is_main = serializers.BooleanField()
-    order = serializers.IntegerField(read_only = True)
-    
-    def validate_is_main(self , value):
-        car_image = CarImage.objects.filter(is_main= True)
+    order = serializers.IntegerField(read_only=True)
+
+    def validate_is_main(self, value):
+        car_image = CarImage.objects.filter(is_main=True)
         if car_image and value == True:
             car_image.first().is_main = False
             car_image.first().save()
-            
+
         return value
 
     def create(self, validated_data):
-        car_image = CarImage.objects.filter(car = validated_data['car'])
+        car_image = CarImage.objects.filter(car=validated_data["car"])
         if car_image.exists():
-            validated_data['order'] = car_image.first().order + 1
+            validated_data["order"] = car_image.first().order + 1
         return CarImage.objects.create(**validated_data)
-        
-            
-    
-        
-
-    

@@ -6,7 +6,7 @@ import { Home } from '@/views'
 import { forgetPassword, login, newPassword, singup, verifyCode } from '@/auth'
 //////////////// STORE /////////////////
 import { useUserStore } from '@/store/useUserStore'
-import { EmailVeriy, profile } from '@/profile'
+import { CarUpload, EmailVeriy, profile } from '@/profile'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -56,6 +56,11 @@ const router = createRouter({
           path: "email_verify",
           component: EmailVeriy,
           meta: { emailV: true }
+        },
+        {
+          path: "upload",
+          component: CarUpload,
+          meta: { requiresAuth: true }
         }
       ]
     }

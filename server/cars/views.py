@@ -6,6 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.generics import ListAPIView, CreateAPIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.generics import get_object_or_404
 
 # ///////////////////// MODELS //////////////////////////
 from .models import AvtoMobileType, Color, Country, Fuel, Car, CarImage
@@ -137,6 +138,23 @@ class AddCarView(APIView):
 
         return Response(data, status=status.HTTP_200_OK)
 
+
+# /////////////////////////////////////////////////////////
+# ////////////    UPDATE CAR      /////////////////////////
+# /////////////////////////////////////////////////////////
+# class UpdateCarView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request, uuid):
+#         car = get_object_or_404(Car, id=uuid)
+
+#         serializer = AddCarSerializer(
+#             car, data=request.data, context={"request": request}
+#         )
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save()
+        
+#         return Response(serializer.data)
 
 # /////////////////////////////////////////////////////////
 # ////////////   UPLOAD CAR IMAGE      ////////////////////
