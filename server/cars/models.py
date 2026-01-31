@@ -47,7 +47,7 @@ class Marka(BaseModel):
 
     def __str__(self):
         return self.marka
-    
+
     def add_marka(self):
         temp_marka = self.marka.lower().strip()
         self.marka = temp_marka
@@ -55,6 +55,7 @@ class Marka(BaseModel):
     def save(self, *args, **kwargs):
         self.add_marka()
         super().save(*args, **kwargs)
+
 
 # //////////////////////////////////////////////////////
 # ////// Avto TYPE and MARKA         ///////////////////
@@ -78,8 +79,16 @@ class CarModel(BaseModel):
     name = models.CharField(max_length=64, unique=True)
     marka = models.ForeignKey(Marka, on_delete=models.CASCADE, related_name="models")
 
+    def add_name(self):
+        temp_name = self.name.lower().strip()
+        self.name = temp_name
+
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        self.add_name()
+        super().save(*args, *kwargs)
 
 
 # //////////////////////////////////////////////////////

@@ -14,6 +14,8 @@ from .serializers import (
     GetAvtoTypeSerializer,
     GetMarkaWithTypeSerializer,
     AvtoTypeMarkaSerializer,
+    GetModelsWithMarkaSerializer,
+    CarModelSerializer,
 )
 
 
@@ -58,3 +60,29 @@ class GetMarkaWithTypeView(APIView):
 # /////////////////////////////////////////////////////////
 # //////////// GET MODELS WITH MARKA    ///////////////////
 # /////////////////////////////////////////////////////////
+class GetModelsWithMarkaView(APIView):
+    """
+     markaga oid modellarni olish
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        serializer = GetModelsWithMarkaSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        car_models = serializer.validated_data.get("car_models")
+
+        car_models_serializer = CarModelSerializer(car_models, many=True)
+
+        return Response(
+            {
+                "success": True,
+                "message": "modellar olindi",
+                "models": car_models_serializer.data,
+            }
+        )
+
+
